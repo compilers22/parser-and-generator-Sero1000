@@ -1,0 +1,103 @@
+#include "SymbolTable.h"
+#include "CodeGenerator.h"
+#include "wchar.h"
+#include <vector>
+
+
+COMPILER HW2
+    SymbolTable* tab;
+    CodeGenerator* gen;
+CHARACTERS
+    letter = 'A'..'Z' + 'a'..'z'.
+    digit = '0'..'9'.
+    semicolon = ';'.
+    dot = '.'.
+    colon = ':'.
+    comma = ','.
+    minus = '-'.
+    plus = '+'.
+    assignment = ":=".
+    variable = "Var".
+    end = "End".
+    begin = "Begin".
+    program = "Program".
+    string = "String".
+    integer = "Integer".
+TOKENS
+    ident  = letter {letter | digit}.
+    number = digit {digit}.
+    Begin = "Begin".
+    End = "End".
+    Program = "Program".
+    Integer = "Integer".
+    String = "String".
+COMMENTS FROM "/*" TO "*/" NESTED
+COMMENTS FROM "//" TO '\r' '\n'
+IGNORE '\r' + '\n' + '\t'
+PRODUCTIONS
+    HW2              = prgHeader varDefs Begin statementSeq End ".".
+    prgHeader                   (. wchar_t* name; .)
+    = Program Identifier<name> ";".
+
+/*--------------------------------------------------------------------------------*/
+    Identifier<wchar_t*& name >
+    = ident           (. name = coco_string_create(t->val); .).
+
+    varDefs          = [ "Var" varSeq { varSeq } ].
+
+/*--------------------------------------------------------------------------------*/
+    varSeq (. std::vector<wchar_t*> names(1); .)
+    = Identifier<names.back()>
+    { "," (. names.emplace_back(); .)
+    Identifier<names.back()> } 
+    ":" (. Obj::Type varType; .)
+    type<varType> (. for(auto&& name : names) {
+                        tab->NewObj(name, varType);
+                        if(varType == Obj::Type::Integer) {
+                            gen->allocateInteger(name);
+                        }
+                     } .)";".
+
+/*--------------------------------------------------------------------------------*/
+    type<Obj::Type& type>
+    = "Integer" (. type = Obj::Type::Integer; .) | 
+      "String"  (. type = Obj::Type::String; .).    
+/*--------------------------------------------------------------------------------*/
+    statementSeq     = {( (. wchar_t* name; .)
+    Identifier<name> (. if (tab->Find(name) == nullptr){ tab->Err(L"name not declared."); } .)
+    ":=" 
+    (. CodeGenerator::Operand op1; .)
+    operand<op1> (. gen->loadOperand(op1); .) 
+    (";" 
+    | 
+    ((. CodeGenerator::Operation opCode; .)
+    mathOP<opCode> 
+    (. CodeGenerator::Operand op2; .)
+    operand<op2> ";" (. gen->loadOperand(op2);
+                        gen->genOperation(opCode); .) ))
+     (. gen->genAssign(name);
+        gen->lastAssignedVariable = name;.) )}
+    .
+/*--------------------------------------------------------------------------------*/
+    mathOP<CodeGenerator::Operation& opcode> = 
+    "+" (. opcode = CodeGenerator::Operation::ADD; .) 
+    | 
+    "-" (. opcode = CodeGenerator::Operation::SUB; .).
+
+/*--------------------------------------------------------------------------------*/
+    operand<CodeGenerator::Operand& operand>          
+    = (. wchar_t* name = nullptr; int value = 0;.) 
+    (
+    Identifier<name> 
+    | 
+    number (. swscanf(t->val, L"%d", &value); .) 
+    )
+    (.
+        operand._name = coco_string_create(name);
+        operand._value = value;
+    .)
+    .
+/*--------------------------------------------------------------------------------*/
+END HW2.
+
+
