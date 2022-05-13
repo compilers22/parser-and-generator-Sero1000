@@ -1,10 +1,8 @@
-program test;
+Program test;
+Var a, b: Integer;
+       c: Integer;
 
-var a, b: integer;
-       c: integer;
-
-begin
-
+Begin
 a := 42;
 
 b := a + 16;
@@ -12,5 +10,4 @@ b := a + 16;
 c := a + b;
 
 c := c - 35;
-
-end.
+End.
