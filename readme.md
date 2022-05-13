@@ -1,4 +1,4 @@
-
+One small Note, I have changed all the reserved words to start with Uppercase letters(e.g program -> Program.)
 
 in this assignment you need to extend the already written scanner with the parser and code generator.
 
